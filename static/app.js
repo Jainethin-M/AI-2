@@ -6,6 +6,8 @@
   const themeToggle = document.getElementById("themeToggle");
   const toastEl = document.getElementById("toast");
   const voiceBtn = document.getElementById("voiceBtn");
+  const voiceLangEl = document.getElementById("voiceLang");
+
   const composerHintEl = document.getElementById("composerHint");
   const defaultComposerHint = composerHintEl ? composerHintEl.textContent : "";
 
@@ -242,6 +244,12 @@
     }
   }
 
+  function getSelectedVoiceLang() {
+    if (voiceLangEl && voiceLangEl.value) return voiceLangEl.value;
+    return navigator.language || "en-IN";
+  }
+
+
   function stopVoiceTyping(silent = false) {
     voiceShouldBeOn = false;
 
@@ -274,11 +282,32 @@
       return;
     }
 
+    // Recognition
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-    recognition.lang = navigator.language || "en-US";
+
+    // ✅ Set initial language from dropdown
+    recognition.lang = getSelectedVoiceLang();
+
+    // ✅ If user changes language, apply + restart if listening
+    if (voiceLangEl) {
+      voiceLangEl.addEventListener("change", () => {
+        if (!recognition) return;
+
+        recognition.lang = getSelectedVoiceLang();
+
+        const label = voiceLangEl.options[voiceLangEl.selectedIndex]?.text || voiceLangEl.value;
+        toast(`Voice language: ${label}`);
+
+        // If currently listening, restart to apply immediately
+        if (voiceShouldBeOn) {
+          try { recognition.stop(); } catch (_) {}
+          // onend will auto-restart because voiceShouldBeOn stays true
+        }
+      });
+    }
 
     recognition.onstart = () => {
       voiceIsActive = true;
@@ -323,8 +352,11 @@
       } else if (err === "audio-capture") {
         toast("No microphone found.");
         stopVoiceTyping(true);
+      } else if (err === "network") {
+        toast("Speech service network error. Check internet.");
+        stopVoiceTyping(true);
       } else {
-        // e.g. 'no-speech' often happens; we let onend auto-restart if user still wants it
+        // e.g. 'no-speech' happens often; onend will auto-restart if user still wants it
       }
     };
 
@@ -334,6 +366,9 @@
       // Some browsers end automatically after a pause.
       // If the user still wants dictation on, try restarting.
       if (voiceShouldBeOn) {
+        // ✅ Ensure correct language at restart time too
+        recognition.lang = getSelectedVoiceLang();
+
         setTimeout(() => {
           if (!voiceShouldBeOn) return;
           try {
@@ -359,6 +394,7 @@
       if (document.hidden) stopVoiceTyping(true);
     });
   }
+
 
   setupVoiceTyping();
 
