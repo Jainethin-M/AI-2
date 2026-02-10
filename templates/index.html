@@ -120,12 +120,24 @@
           ></textarea>
 
           <div class="composer__actions">
-            <button class="chipbtn" id="attachBtn" type="button" title="(UI only) Attach" aria-label="Attach">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M8.5 12.8 14.6 6.7a3 3 0 1 1 4.2 4.2l-7.4 7.4a5 5 0 0 1-7.1-7.1l7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Attach
-            </button>
+            <div class="composer__left">
+              <button class="chipbtn" id="attachBtn" type="button" title="(UI only) Attach" aria-label="Attach">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M8.5 12.8 14.6 6.7a3 3 0 1 1 4.2 4.2l-7.4 7.4a5 5 0 0 1-7.1-7.1l7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Attach
+              </button>
+
+              <button class="chipbtn" id="voiceBtn" type="button" title="Voice typing" aria-label="Voice typing" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                  <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M19 11a7 7 0 0 1-14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <path d="M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                <span>Voice</span>
+              </button>
+            </div>
 
             <button class="sendbtn" id="sendBtn" type="button" aria-label="Send message">
               <span>Send</span>

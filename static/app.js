@@ -5,6 +5,10 @@
   const clearBtn = document.getElementById("clearBtn");
   const themeToggle = document.getElementById("themeToggle");
   const toastEl = document.getElementById("toast");
+  const voiceBtn = document.getElementById("voiceBtn");
+  const composerHintEl = document.getElementById("composerHint");
+  const defaultComposerHint = composerHintEl ? composerHintEl.textContent : "";
+
 
   const convoList = document.getElementById("convoList");
   const newChatBtn = document.getElementById("newChatBtn");
@@ -172,6 +176,192 @@
     toastTimer = setTimeout(() => toastEl.classList.remove("toast--show"), 2200);
   }
 
+
+  // --- Voice typing (Speech-to-Text via Web Speech API) ---
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  let recognition = null;
+  let voiceShouldBeOn = false; // user intent (toggled by button)
+  let voiceIsActive = false;   // actual recognition session state
+
+  // We insert dictation at the caret position captured when starting
+  let voiceBaseBefore = "";
+  let voiceBaseAfter = "";
+  let voiceFinalTranscript = "";
+
+  function appendWithSpace(a, b) {
+    const A = (a || "").trim();
+    const B = (b || "").trim();
+    if (!A) return B;
+    if (!B) return A;
+    return A + " " + B;
+  }
+
+  function setVoiceUI(listening) {
+    if (!voiceBtn) return;
+
+    voiceBtn.classList.toggle("chipbtn--active", listening);
+    voiceBtn.setAttribute("aria-pressed", listening ? "true" : "false");
+
+    const label = voiceBtn.querySelector("span");
+    if (label) label.textContent = listening ? "Listening…" : "Voice";
+
+    voiceBtn.title = listening ? "Click to stop voice typing" : "Voice typing";
+  }
+
+  function startVoiceTyping() {
+    if (!recognition) return;
+
+    // Capture insert position once at start
+    const start =
+      typeof inputEl.selectionStart === "number" ? inputEl.selectionStart : inputEl.value.length;
+    const end =
+      typeof inputEl.selectionEnd === "number" ? inputEl.selectionEnd : start;
+
+    voiceBaseBefore = inputEl.value.slice(0, start);
+    voiceBaseAfter = inputEl.value.slice(end);
+    voiceFinalTranscript = "";
+
+    voiceShouldBeOn = true;
+
+    // Prevent user edits while we are continuously rewriting interim text
+    inputEl.readOnly = true;
+    inputEl.focus();
+
+    if (composerHintEl) {
+      composerHintEl.textContent = "Listening… Speak now. Click the mic again to stop.";
+    }
+
+    setVoiceUI(true);
+
+    try {
+      recognition.start();
+    } catch (e) {
+      // Can throw if start is called too quickly / already started
+      console.warn("SpeechRecognition.start() failed:", e);
+    }
+  }
+
+  function stopVoiceTyping(silent = false) {
+    voiceShouldBeOn = false;
+
+    // Stop the recognition session if it's currently active
+    if (recognition && voiceIsActive) {
+      try {
+        recognition.stop();
+      } catch (e) {
+        console.warn("SpeechRecognition.stop() failed:", e);
+      }
+    }
+
+    inputEl.readOnly = false;
+    setVoiceUI(false);
+
+    if (composerHintEl) composerHintEl.textContent = defaultComposerHint;
+    if (!silent) toast("Voice typing stopped");
+  }
+
+  function setupVoiceTyping() {
+    if (!voiceBtn) return;
+
+    // Browser support check
+    if (!SpeechRecognition) {
+      voiceBtn.disabled = true;
+      voiceBtn.title = "Voice typing isn’t supported in this browser";
+      voiceBtn.addEventListener("click", () => {
+        toast("Voice typing isn’t supported in this browser (try Chrome).");
+      });
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.lang = navigator.language || "en-US";
+
+    recognition.onstart = () => {
+      voiceIsActive = true;
+      setVoiceUI(true);
+    };
+
+    recognition.onresult = (event) => {
+      let interim = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const res = event.results[i];
+        const transcript = (res[0]?.transcript || "").trim();
+        if (!transcript) continue;
+
+        if (res.isFinal) {
+          voiceFinalTranscript = appendWithSpace(voiceFinalTranscript, transcript);
+        } else {
+          interim = appendWithSpace(interim, transcript);
+        }
+      }
+
+      const combined = appendWithSpace(voiceFinalTranscript, interim);
+      inputEl.value = voiceBaseBefore + combined + voiceBaseAfter;
+
+      // Keep caret at the end of the inserted speech chunk
+      const caretPos = (voiceBaseBefore + combined).length;
+      try {
+        inputEl.setSelectionRange(caretPos, caretPos);
+      } catch (_) {}
+
+      autoResize();
+    };
+
+    recognition.onerror = (event) => {
+      const err = event?.error || "unknown";
+      console.warn("SpeechRecognition error:", err, event);
+
+      // Permission/mic errors should stop and release readOnly
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        toast("Microphone permission denied.");
+        stopVoiceTyping(true);
+      } else if (err === "audio-capture") {
+        toast("No microphone found.");
+        stopVoiceTyping(true);
+      } else {
+        // e.g. 'no-speech' often happens; we let onend auto-restart if user still wants it
+      }
+    };
+
+    recognition.onend = () => {
+      voiceIsActive = false;
+
+      // Some browsers end automatically after a pause.
+      // If the user still wants dictation on, try restarting.
+      if (voiceShouldBeOn) {
+        setTimeout(() => {
+          if (!voiceShouldBeOn) return;
+          try {
+            recognition.start();
+          } catch (_) {}
+        }, 250);
+        return;
+      }
+
+      // Otherwise we’re done (manual stop or fatal error)
+      inputEl.readOnly = false;
+      setVoiceUI(false);
+      if (composerHintEl) composerHintEl.textContent = defaultComposerHint;
+    };
+
+    voiceBtn.addEventListener("click", () => {
+      if (voiceShouldBeOn) stopVoiceTyping(false);
+      else startVoiceTyping();
+    });
+
+    // If tab is hidden, stop (prevents “stuck listening”)
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopVoiceTyping(true);
+    });
+  }
+
+  setupVoiceTyping();
+
   // // --- Send to backend (no response expected) ---
   // async function postToBackend(payload) {
   //   // This endpoint exists in app.py but returns 204 without content.
@@ -218,6 +408,8 @@
   }
 
   async function sendMessage() {
+    stopVoiceTyping(true);
+
     const text = inputEl.value.trim();
     if (!text) return;
 

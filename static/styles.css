@@ -543,3 +543,32 @@ code{
   }
   .topbar__hamburger{ display: grid; }
 }
+
+/* --- Voice typing UI --- */
+.composer__left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chipbtn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+.chipbtn:disabled:hover{
+  transform: none;
+  background: rgba(255,255,255,.06);
+}
+
+.chipbtn--active{
+  background: var(--bad);
+  border-color: rgba(255,105,130,.35);
+  animation: micPulse 1.35s ease-in-out infinite;
+}
+
+@keyframes micPulse{
+  0%   { box-shadow: 0 0 0 0 rgba(255,105,130,.0); }
+  50%  { box-shadow: 0 0 0 10px rgba(255,105,130,.12); }
+  100% { box-shadow: 0 0 0 0 rgba(255,105,130,.0); }
+}
+
