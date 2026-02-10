@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat UI</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body>
+  <div class="bg">
+    <div class="bg__orb bg__orb--a"></div>
+    <div class="bg__orb bg__orb--b"></div>
+    <div class="bg__orb bg__orb--c"></div>
+  </div>
+
+  <div class="app" role="application" aria-label="Chat application">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Conversations">
+      <header class="sidebar__top">
+        <div class="brand">
+          <div class="brand__logo" aria-hidden="true">
+            <!-- simple inline mark -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+              <path d="M7 7.5C7 5.567 8.567 4 10.5 4h3C15.433 4 17 5.567 17 7.5v2c0 1.933-1.567 3.5-3.5 3.5h-1.2l-2.9 2.2c-.6.45-1.4.02-1.4-.73V13H10.5C8.567 13 7 11.433 7 9.5v-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 18.2h4.5c2.485 0 4.5-2.015 4.5-4.5V13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="brand__text">
+            <div class="brand__name">Aurora Chat</div>
+            <div class="brand__sub">Frontend-first UI</div>
+          </div>
+        </div>
+
+        <div class="sidebar__actions">
+          <button class="iconbtn" id="newChatBtn" title="New chat" aria-label="New chat">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="iconbtn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M21 13.2A8.5 8.5 0 1 1 10.8 3a7 7 0 1 0 10.2 10.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="sidebar__search">
+        <div class="search">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M16.2 16.2 21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <input id="searchInput" type="search" placeholder="Search conversations…" autocomplete="off" />
+        </div>
+      </div>
+
+      <nav class="convos" id="convoList" aria-label="Conversation list">
+        <!-- Populated by JS -->
+      </nav>
+
+      <footer class="sidebar__bottom">
+        <div class="userchip" aria-label="User profile">
+          <div class="userchip__avatar" aria-hidden="true">U</div>
+          <div class="userchip__meta">
+            <div class="userchip__name">You</div>
+            <div class="userchip__hint">Local UI • No bot yet</div>
+          </div>
+        </div>
+      </footer>
+    </aside>
+
+    <!-- Main Chat -->
+    <section class="main" aria-label="Chat panel">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button class="iconbtn iconbtn--ghost topbar__hamburger" id="toggleSidebar" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <div class="chatmeta">
+            <div class="chatmeta__title" id="chatTitle">General</div>
+            <div class="chatmeta__subtitle" id="chatSubtitle">Messages will POST to <code>/api/messages</code></div>
+          </div>
+        </div>
+
+        <div class="topbar__right">
+          <span class="pill" id="netStatus" title="Network status">Ready</span>
+          <button class="iconbtn" id="clearBtn" title="Clear messages" aria-label="Clear messages">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M9 3h6m-9 4h12m-2 0-.7 14.1A2 2 0 0 1 13.3 23h-2.6a2 2 0 0 1-2-1.9L8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="chat" id="chat" aria-label="Messages" tabindex="0">
+        <div class="notice">
+          <div class="notice__title">Frontend is ready ✅</div>
+          <div class="notice__text">
+            Type a message and hit <b>Enter</b>. Your message will appear instantly and will be
+            sent to the backend endpoint <code>POST /api/messages</code>. No reply is expected for now.
+          </div>
+        </div>
+      </main>
+
+      <footer class="composer" aria-label="Message composer">
+        <div class="composer__box">
+          <textarea
+            id="messageInput"
+            class="composer__input"
+            placeholder="Write a message… (Enter to send, Shift+Enter for new line)"
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+
+          <div class="composer__actions">
+            <button class="chipbtn" id="attachBtn" type="button" title="(UI only) Attach" aria-label="Attach">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M8.5 12.8 14.6 6.7a3 3 0 1 1 4.2 4.2l-7.4 7.4a5 5 0 0 1-7.1-7.1l7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Attach
+            </button>
+
+            <button class="sendbtn" id="sendBtn" type="button" aria-label="Send message">
+              <span>Send</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path d="M3 11.5 21 3l-8.5 18-2.4-7.2L3 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="composer__hint" id="composerHint">
+          Your messages are stored only in the browser UI (for now).
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
